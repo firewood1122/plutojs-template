@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "alwaysStrict": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "jsx": "react",
+    "target": "ES5",
+    "moduleResolution": "Node",
+  },
+  "exclude": [
+    "node_modules",
+  ],
+  "files": ["modules.d.ts"]
+}
