@@ -1,6 +1,6 @@
-# `@plutojs/demo`
+# `@plutojs/###NAME###`
 
-> demo组件
+> ###NAME###组件
 
 ## Usage
 
