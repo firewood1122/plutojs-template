@@ -1,13 +1,19 @@
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const env = require('node-env-file')
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const { ModuleFederationPlugin } = require('webpack').container;
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-
+const package = require('./package.json');
 const resolve = dir => path.resolve(__dirname, dir);
 const pageDirPath = './src/page'; // 页面目录路径
+
+// 加载环境文件
+const envFile = resolve('.env');
+if (fs.existsSync(envFile)) env(envFile);
 
 /**
  * 获取页面入口
@@ -74,11 +80,12 @@ module.exports = (env, argv) => {
   const isDev = mode !== 'production';
 
   return {
+    devtool: isDev ? false : 'source-map',
     entry: getEntryMap(),
     mode,
     devServer: {
       host: '0.0.0.0',
-      port: 7001,
+      port: process.env.PORT || 7001,
       publicPath: '/',
       useLocalIp: true,
       open: true,
@@ -148,6 +155,14 @@ module.exports = (env, argv) => {
           baseMicro: getMicro(process.env.TARGET),
         },
         shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+      }),
+      new webpack.DefinePlugin({
+        'process.env': {
+          'TARGET': JSON.stringify(process.env.TARGET),
+          'REACT_APP_VERSION': JSON.stringify(package.version),
+          'SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || ''),
+          'SENTRY_PROJECT_NAME': JSON.stringify(process.env.SENTRY_PROJECT_NAME || ''),
+        }
       }),
       ...getHtmlWebpackPlugin(),
     ],
