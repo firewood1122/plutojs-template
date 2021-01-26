@@ -1,3 +1,17 @@
 .demo {
-  background: yellowgreen;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 36px;
+  line-height: 2;
+  text-align: center;
+  background: #fff;
+
+  .icon {
+    margin-right: 20px;
+    width: 40px;
+    height: 40px;
+    background: url('./image/demo.png') no-repeat;
+    background-size: contain;
+  }
 }

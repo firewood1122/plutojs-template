@@ -5,7 +5,10 @@ interface PropsType {
 }
 const demo = (props: PropsType) => {
   return (
-    <div className="demo">demo</div>
+    <div className="demo">
+      <div className="icon"></div>
+      <div>demo</div>
+    </div>
   );
 };
 

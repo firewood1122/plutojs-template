@@ -1,9 +1,12 @@
 import React from 'react';
 import Demo from '@/component/demo';
+import './app.scss';
 
 const App = () => {
   return (
-    <Demo />
+    <div className="page">
+      <Demo />
+    </div>
   );
 };
 

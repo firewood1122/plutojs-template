@@ -6,6 +6,9 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const FileManagerPlugin = require('filemanager-webpack-plugin');
+const SentryWebpackPlugin = require('@sentry/webpack-plugin');
 const { ModuleFederationPlugin } = require('webpack').container;
 const package = require('./package.json');
 const resolve = dir => path.resolve(__dirname, dir);
@@ -33,9 +36,9 @@ const getEntryMap = () => {
 /**
  * 生成多页面配置
  */
-const getHtmlWebpackPlugin = () => {
+const getHtmlWebpackPlugin = (isDev) => {
   return getEntry().map(item => new HtmlWebpackPlugin({
-    filename: `${item}.html`,
+    filename: isDev ? `${item}.html` : `../${item}.html`,
     template: './public/index.html',
     chunks: [item],
   }));
@@ -92,9 +95,9 @@ module.exports = (env, argv) => {
       disableHostCheck: true,
     },
     output: {
-      path: resolve('dist'),
+      path: resolve('dist/static'),
       filename: isDev ? '[name].js' : '[name]_[chunkhash:8].js',
-      publicPath: '/',
+      publicPath: isDev ? '/' : '/static/',
     },
     resolve: {
       extensions: ['.ts', '.tsx', '.js'],
@@ -146,16 +149,28 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new CleanWebpackPlugin(),
+      new FileManagerPlugin({
+        events: {
+          onEnd: {
+            delete: ['**/*.map'],
+          },
+        },
+      }),
+      new CopyPlugin({
+        patterns: [
+          { from: 'public/asset', to: '..' },
+        ],
+      }),
       new MiniCssExtractPlugin({
         filename: isDev ? '[name].css' : '[name]_[chunkhash:8].css',
       }),
-      new ModuleFederationPlugin({
-        name: 'demo',
-        remotes: {
-          baseMicro: getMicro(process.env.TARGET),
-        },
-        shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-      }),
+      // new ModuleFederationPlugin({
+      //   name: 'demo',
+      //   remotes: {
+      //     baseMicro: getMicro(process.env.TARGET),
+      //   },
+      //   shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+      // }),
       new webpack.DefinePlugin({
         'process.env': {
           'TARGET': JSON.stringify(process.env.TARGET),
@@ -164,7 +179,7 @@ module.exports = (env, argv) => {
           'SENTRY_PROJECT_NAME': JSON.stringify(process.env.SENTRY_PROJECT_NAME || ''),
         }
       }),
-      ...getHtmlWebpackPlugin(),
+      ...getHtmlWebpackPlugin(isDev),
     ],
     optimization: {
       minimize: !isDev,
