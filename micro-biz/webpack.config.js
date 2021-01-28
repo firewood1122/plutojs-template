@@ -10,6 +10,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const FileManagerPlugin = require('filemanager-webpack-plugin');
 const SentryWebpackPlugin = require('@sentry/webpack-plugin');
 const { ModuleFederationPlugin } = require('webpack').container;
+const UploadAlisOSSPlugin = require('./build/upload-ali-oss-plugin');
 const package = require('./package.json');
 const resolve = dir => path.resolve(__dirname, dir);
 const pageDirPath = './src/page'; // 页面目录路径
@@ -97,7 +98,7 @@ module.exports = (env, argv) => {
     output: {
       path: resolve('dist/static'),
       filename: isDev ? '[name].js' : '[name]_[chunkhash:8].js',
-      publicPath: isDev ? '/' : '/static/',
+      publicPath: isDev ? '/' : (process.env.CDN || '/static/'),
     },
     resolve: {
       extensions: ['.ts', '.tsx', '.js'],
@@ -180,6 +181,13 @@ module.exports = (env, argv) => {
         }
       }),
       ...getHtmlWebpackPlugin(isDev),
+      new UploadAlisOSSPlugin({
+        region: process.env.OSS_REGION,
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+        bucket: process.env.OSS_BUCKET,
+        prefix: process.env.OSS_PREFIX,
+      }),
     ],
     optimization: {
       minimize: !isDev,
