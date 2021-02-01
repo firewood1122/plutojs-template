@@ -11,21 +11,36 @@ class UploadAlisOSSPlugin {
   apply(compiler) {
     if (compiler.hooks && compiler.hooks.emit) { // webpack 5
       compiler.hooks.emit.tapAsync(pluginName, (compilation, cb) => {
-        this.pluginEmitFn(compilation, cb)
+        this.pluginEmitFn(compilation, cb);
       });
     } else {
       compiler.plugin('emit', (compilation, cb) => {
-        this.pluginEmitFn(compilation, cb)
-      })
+        this.pluginEmitFn(compilation, cb);
+      });
     }
   }
 
   pluginEmitFn(compilation, cb) {
+    const { dryRun = false } = this.options;
+    if (dryRun) {
+      this.log('DRY Run Mode');
+      cb();
+      return;
+    }
+
     const files = this.pickupAssetsFiles(compilation);
     const promises = files.map(item => this.put(item.name, Buffer.from(item.content)));
     Promise.all(promises).then(() => {
       cb();
     });
+  }
+
+  log(info) {
+    console.log(`[${pluginName}] ${info}`);
+  }
+
+  error(info, err) {
+    console.error(`[${pluginName}] ${info}`, err);
   }
 
   /**
@@ -45,9 +60,9 @@ class UploadAlisOSSPlugin {
 
     try {
       let result = await client.put(prefix + name, content);
-      console.log(`上存成功: ${result.name}`);
+      this.log(`上传成功: ${result.name}`);
     } catch (e) {
-      console.error('上存失败: %j', e);
+      this.error('上传失败: %j', e);
     }
   }
 

@@ -2,3 +2,4 @@
 /**/node_modules
 .out
 lerna-debug.log
+.sentry.properties

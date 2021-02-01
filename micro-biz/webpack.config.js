@@ -7,10 +7,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
-const FileManagerPlugin = require('filemanager-webpack-plugin');
 const SentryWebpackPlugin = require('@sentry/webpack-plugin');
 const { ModuleFederationPlugin } = require('webpack').container;
 const UploadAlisOSSPlugin = require('./build/upload-ali-oss-plugin');
+const DeleteSourcemapWebpackPlugin = require('./build/delete-sourcemap-webpack-plugin');
 const package = require('./package.json');
 const resolve = dir => path.resolve(__dirname, dir);
 const pageDirPath = './src/page'; // 页面目录路径
@@ -84,7 +84,7 @@ module.exports = (env, argv) => {
   const isDev = mode !== 'production';
 
   return {
-    devtool: isDev ? false : 'source-map',
+    devtool: isDev || 'source-map',
     entry: getEntryMap(),
     mode,
     devServer: {
@@ -132,6 +132,7 @@ module.exports = (env, argv) => {
             {
               loader: 'css-loader',
               options: {
+                sourceMap: false,
                 importLoaders: 2,
               },
             },
@@ -150,18 +151,15 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new CleanWebpackPlugin(),
-      new FileManagerPlugin({
-        events: {
-          onEnd: {
-            delete: ['**/*.map'],
-          },
-        },
+      new webpack.DefinePlugin({
+        'process.env': {
+          'TARGET': JSON.stringify(process.env.TARGET),
+          'REACT_APP_VERSION': JSON.stringify(package.version),
+          'SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || ''),
+          'SENTRY_PROJECT_NAME': JSON.stringify(process.env.SENTRY_PROJECT_NAME || ''),
+        }
       }),
-      new CopyPlugin({
-        patterns: [
-          { from: 'public/asset', to: '..' },
-        ],
-      }),
+      ...getHtmlWebpackPlugin(isDev),
       new MiniCssExtractPlugin({
         filename: isDev ? '[name].css' : '[name]_[chunkhash:8].css',
       }),
@@ -172,21 +170,31 @@ module.exports = (env, argv) => {
       //   },
       //   shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
       // }),
-      new webpack.DefinePlugin({
-        'process.env': {
-          'TARGET': JSON.stringify(process.env.TARGET),
-          'REACT_APP_VERSION': JSON.stringify(package.version),
-          'SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || ''),
-          'SENTRY_PROJECT_NAME': JSON.stringify(process.env.SENTRY_PROJECT_NAME || ''),
-        }
+      new DeleteSourcemapWebpackPlugin({
+        dryRun: isDev,
+        path: resolve('dist/static'),
       }),
-      ...getHtmlWebpackPlugin(isDev),
+      new CopyPlugin({
+        patterns: [
+          { from: 'public/asset', to: '..' },
+        ],
+      }),
       new UploadAlisOSSPlugin({
+        dryRun: true,
         region: process.env.OSS_REGION,
         accessKeyId: process.env.OSS_ACCESS_KEY_ID,
         accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
         bucket: process.env.OSS_BUCKET,
         prefix: process.env.OSS_PREFIX,
+      }),
+      new SentryWebpackPlugin({
+        dryRun: isDev,
+        release: `${process.env.SENTRY_PROJECT_NAME}@${package.version}`,
+        include: path.join(__dirname, 'dist'),
+        ignoreFile: '.sentrycliignore',
+        ignore: ['node_modules'],
+        configFile: '.sentry.properties',
+        urlPrefix: `~/${process.env.SENTRY_PROJECT_NAME}/`
       }),
     ],
     optimization: {
