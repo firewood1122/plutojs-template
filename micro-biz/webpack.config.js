@@ -84,7 +84,7 @@ module.exports = (env, argv) => {
   const isDev = mode !== 'production';
 
   return {
-    devtool: isDev || 'source-map',
+    devtool: isDev ? false : 'source-map',
     entry: getEntryMap(),
     mode,
     devServer: {
@@ -138,6 +138,21 @@ module.exports = (env, argv) => {
             },
             'postcss-loader',
             'sass-loader'
+          ]
+        },
+        {
+          test: /\.css$/,
+          use: [
+            'style-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                importLoaders: 1,
+              },
+            },
+            {
+              loader: 'postcss-loader'
+            }
           ]
         },
         {
