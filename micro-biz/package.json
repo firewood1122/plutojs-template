@@ -37,10 +37,10 @@
     "webpack-dev-server": "^3.11.0"
   },
   "scripts": {
-    "dev": "cross-env TARGET=local webpack serve --mode development",
-    "build:test": "cross-env TARGET=test webpack --mode production",
-    "build:pre": "cross-env TARGET=staging webpack --mode production",
-    "build": "cross-env TARGET=production webpack --mode production"
+    "dev": "cross-env TARGET=local webpack serve --mode development --config build/webpack.config.js",
+    "build:test": "cross-env TARGET=test webpack --mode production --config build/webpack.config.js",
+    "build:pre": "cross-env TARGET=staging webpack --mode production --config build/webpack.config.js",
+    "build": "cross-env TARGET=production webpack --mode production --config build/webpack.config.js"
   },
   "dependencies": {
     "@sentry/react": "5.30.0",

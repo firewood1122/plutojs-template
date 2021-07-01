@@ -1,4 +1,3 @@
-const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const env = require('node-env-file')
@@ -8,15 +7,17 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const SentryWebpackPlugin = require('@sentry/webpack-plugin');
-const { ModuleFederationPlugin } = require('webpack').container;
-const UploadAlisOSSPlugin = require('./build/upload-ali-oss-plugin');
-const DeleteSourcemapWebpackPlugin = require('./build/delete-sourcemap-webpack-plugin');
-const package = require('./package.json');
+const UploadAlisOSSPlugin = require('./upload-ali-oss-plugin');
+const DeleteSourcemapWebpackPlugin = require('./delete-sourcemap-webpack-plugin');
+const package = require('../package.json');
+const proejctConfig = require('../project.config');
 const resolve = dir => path.resolve(__dirname, dir);
-const pageDirPath = './src/page'; // 页面目录路径
+const pageDirPath = resolve('../src/page'); // 页面目录路径
+
+console.log(proejctConfig);
 
 // 加载环境文件
-const envFile = resolve('.env');
+const envFile = resolve('../.env');
 if (fs.existsSync(envFile)) env(envFile);
 
 /**
@@ -45,39 +46,6 @@ const getHtmlWebpackPlugin = (isDev) => {
   }));
 }
 
-/**
- * 获取本机IP地址
- */
-const getIPAddress = () => {
-  const interfaces = os.networkInterfaces();
-  for (let devName in interfaces) {
-    const iface = interfaces[devName];
-    for (let i = 0; i < iface.length; i++) {
-      const alias = iface[i];
-      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
-        return alias.address;
-      }
-    }
-  }
-}
-
-/**
- * 获取前端微服务链接
- * @param {string} target
- */
-const getMicro = (target) => {
-  const name = 'test';
-  const version = '0.0.1';
-  const urlMap = {
-    local: `${name}@http://${getIPAddress()}:6001/remoteEntry.js`,
-    test: `${name}@http://${getIPAddress()}:6001/remoteEntry_${version}.js`,
-    pre: `${name}@http://${getIPAddress()}:6001/remoteEntry_${version}.js`,
-    product: `${name}@http://${getIPAddress()}:6001/remoteEntry_${version}.js`,
-  };
-  const url = urlMap[target] || urlMap.product;
-  return url;
-}
-
 module.exports = (env, argv) => {
   // 判断是否开发模式
   const { mode = 'production' } = argv;
@@ -103,7 +71,7 @@ module.exports = (env, argv) => {
     resolve: {
       extensions: ['.ts', '.tsx', '.js'],
       alias: {
-        '@': resolve('src')
+        '@': resolve('../src')
       }
     },
     module: {
@@ -185,13 +153,7 @@ module.exports = (env, argv) => {
       new MiniCssExtractPlugin({
         filename: isDev ? '[name].css' : '[name]_[chunkhash:8].css',
       }),
-      // new ModuleFederationPlugin({
-      //   name: 'demo',
-      //   remotes: {
-      //     baseMicro: getMicro(process.env.TARGET),
-      //   },
-      //   shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-      // }),
+
       new DeleteSourcemapWebpackPlugin({
         dryRun: isDev,
         path: resolve('dist/static'),
