@@ -137,7 +137,14 @@ module.exports = (env, argv) => {
               },
             },
             'postcss-loader',
-            'sass-loader'
+            {
+              loader: 'sass-loader',
+              options: {
+                sassOptions: {
+                  outputStyle: 'expanded',
+                },
+              },
+            }
           ]
         },
         {
