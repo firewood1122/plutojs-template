@@ -9,42 +9,29 @@ const CopyPlugin = require('copy-webpack-plugin');
 const SentryWebpackPlugin = require('@sentry/webpack-plugin');
 const UploadAlisOSSPlugin = require('./upload-ali-oss-plugin');
 const DeleteSourcemapWebpackPlugin = require('./delete-sourcemap-webpack-plugin');
+const { getEntry, getEntryMap } = require('./utils');
 const package = require('../package.json');
 const proejctConfig = require('../project.config');
-const resolve = dir => path.resolve(__dirname, dir);
-const pageDirPath = resolve('../src/page'); // 页面目录路径
+const { open, openPage, moduleFederations } = proejctConfig;
 
-console.log(proejctConfig);
+const resolve = dir => path.resolve(__dirname, dir);
+const pageDir = resolve('../src/page'); // 页面目录路径
+const entries = getEntry(pageDir);
 
 // 加载环境文件
 const envFile = resolve('../.env');
 if (fs.existsSync(envFile)) env(envFile);
 
 /**
- * 获取页面入口
- */
-const getEntry = () => {
-  const pageDir = resolve(pageDirPath);
-  return fs.readdirSync(pageDir).filter(item => fs.statSync(path.resolve(pageDir, item)).isDirectory());
-}
-const getEntryMap = () => {
-  const entry = {};
-  getEntry().forEach(item => {
-    entry[item] = `${pageDirPath}/${item}/index`;
-  });
-  return entry;
-}
-
-/**
  * 生成多页面配置
  */
 const getHtmlWebpackPlugin = (isDev) => {
-  return getEntry().map(item => new HtmlWebpackPlugin({
+  return entries.map(item => new HtmlWebpackPlugin({
     filename: isDev ? `${item}.html` : `../${item}.html`,
     template: './public/index.html',
     chunks: [item],
   }));
-}
+};
 
 module.exports = (env, argv) => {
   // 判断是否开发模式
@@ -53,14 +40,15 @@ module.exports = (env, argv) => {
 
   return {
     devtool: isDev ? false : 'source-map',
-    entry: getEntryMap(),
+    entry: getEntryMap(pageDir),
     mode,
     devServer: {
       host: '0.0.0.0',
       port: process.env.PORT || 7001,
       publicPath: '/',
       useLocalIp: true,
-      open: true,
+      open,
+      openPage,
       disableHostCheck: true,
     },
     output: {
@@ -150,10 +138,10 @@ module.exports = (env, argv) => {
         }
       }),
       ...getHtmlWebpackPlugin(isDev),
+      ...moduleFederations,
       new MiniCssExtractPlugin({
         filename: isDev ? '[name].css' : '[name]_[chunkhash:8].css',
       }),
-
       new DeleteSourcemapWebpackPlugin({
         dryRun: isDev,
         path: resolve('dist/static'),
@@ -164,7 +152,7 @@ module.exports = (env, argv) => {
         ],
       }),
       new UploadAlisOSSPlugin({
-        dryRun: true,
+        dryRun: isDev,
         region: process.env.OSS_REGION,
         accessKeyId: process.env.OSS_ACCESS_KEY_ID,
         accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,

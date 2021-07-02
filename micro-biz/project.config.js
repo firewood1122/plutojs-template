@@ -45,5 +45,7 @@ const moduleFederations = [
 ];
 
 module.exports = {
+	open: true,
+	openPage: '',
 	moduleFederations,
 }
