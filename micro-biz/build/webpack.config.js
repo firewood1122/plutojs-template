@@ -52,15 +52,16 @@ module.exports = (env, argv) => {
   const extraPlugins = [];
 
   // AlisOSS插件
-  const { OSS_REGION, OSS_BUCKET, OSS_PREFIX, OSS_CLIENT_NAME } = process.env;
-  if (OSS_REGION && OSS_BUCKET && OSS_PREFIX && OSS_CLIENT_NAME) {
+  const { OSS_REGION } = process.env;
+  if (OSS_REGION) {
     extraPlugins.push(
       new UploadAlisOSSPlugin({
         dryRun: isDev,
-        region: OSS_REGION,
-        bucket: OSS_BUCKET,
-        prefix: OSS_PREFIX,
-        clientName: OSS_CLIENT_NAME,
+        region: process.env.OSS_REGION,
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+        bucket: process.env.OSS_BUCKET,
+        prefix: process.env.OSS_PREFIX,
       })
     );
   }
