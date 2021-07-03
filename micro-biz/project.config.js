@@ -1,21 +1,4 @@
-const os = require('os');
-const { ModuleFederationPlugin } = require('webpack').container;
-
-/**
- * 获取本机IP地址
- */
- const getIPAddress = () => {
-  const interfaces = os.networkInterfaces();
-  for (let devName in interfaces) {
-    const iface = interfaces[devName];
-    for (let i = 0; i < iface.length; i++) {
-      const alias = iface[i];
-      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
-        return alias.address;
-      }
-    }
-  }
-}
+const { getIPAddress } = require('./build/utils');
 
 /**
  * 获取前端微服务链接
@@ -35,13 +18,13 @@ const getMicro = (target) => {
 };
 
 const moduleFederations = [
-	new ModuleFederationPlugin({
-		name: 'demo',
-		remotes: {
-			baseMicro: getMicro(process.env.TARGET),
-		},
-		shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-	}),
+	// {
+	// 	name: 'demo',
+	// 	remotes: {
+	// 		baseMicro: getMicro(process.env.TARGET),
+	// 	},
+	// 	shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+	// },
 ];
 
 module.exports = {

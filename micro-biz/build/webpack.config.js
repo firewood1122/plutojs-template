@@ -1,26 +1,36 @@
 const fs = require('fs');
 const path = require('path');
-const env = require('node-env-file')
+const env = require('node-env-file');
 const webpack = require('webpack');
+const { getEntry, getEntryMap, getLoaderConfig } = require('./utils');
+
+// 官方插件
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const { ModuleFederationPlugin } = require('webpack').container;
+
+// 第三方插件
 const CopyPlugin = require('copy-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const SentryWebpackPlugin = require('@sentry/webpack-plugin');
+
+// 自定义插件
 const UploadAlisOSSPlugin = require('./upload-ali-oss-plugin');
 const DeleteSourcemapWebpackPlugin = require('./delete-sourcemap-webpack-plugin');
-const { getEntry, getEntryMap } = require('./utils');
+
+// 引用项目配置
 const package = require('../package.json');
 const proejctConfig = require('../project.config');
 const { open, openPage, moduleFederations } = proejctConfig;
 
-const resolve = dir => path.resolve(__dirname, dir);
-const pageDir = resolve('../src/page'); // 页面目录路径
-const entries = getEntry(pageDir);
-
 // 加载环境文件
-const envFile = resolve('../.env');
+const resolve = dir => path.resolve(__dirname, '..', dir);
+const envFile = resolve('.env');
 if (fs.existsSync(envFile)) env(envFile);
+
+// 项目路径
+const pageDir = resolve('src/page');
+const entries = getEntry(pageDir);
 
 /**
  * 生成多页面配置
@@ -37,6 +47,43 @@ module.exports = (env, argv) => {
   // 判断是否开发模式
   const { mode = 'production' } = argv;
   const isDev = mode !== 'production';
+
+  // 可配置插件
+  const extraPlugins = [];
+
+  // AlisOSS插件
+  const { OSS_REGION, OSS_BUCKET, OSS_PREFIX, OSS_CLIENT_NAME } = process.env;
+  if (OSS_REGION && OSS_BUCKET && OSS_PREFIX && OSS_CLIENT_NAME) {
+    extraPlugins.push(
+      new UploadAlisOSSPlugin({
+        dryRun: isDev,
+        region: OSS_REGION,
+        bucket: OSS_BUCKET,
+        prefix: OSS_PREFIX,
+        clientName: OSS_CLIENT_NAME,
+      })
+    );
+  }
+
+  // Sentry插件
+  if (process.env.SENTRY_PROJECT_NAME) {
+    extraPlugins.push(
+      new SentryWebpackPlugin({
+        dryRun: isDev,
+        release: `${process.env.SENTRY_PROJECT_NAME}@${package.version}`,
+        include: resolve('dist'),
+        ignoreFile: '.sentrycliignore',
+        ignore: ['node_modules'],
+        configFile: '.sentry.properties',
+        urlPrefix: `~/${process.env.SENTRY_PROJECT_NAME}/`
+      })
+    );
+  }
+
+  // 模块联盟插件
+  moduleFederations.map(option => {
+    extraPlugins.push(new ModuleFederationPlugin(option));
+  });
 
   return {
     devtool: isDev ? false : 'source-map',
@@ -59,76 +106,14 @@ module.exports = (env, argv) => {
     resolve: {
       extensions: ['.ts', '.tsx', '.js'],
       alias: {
-        '@': resolve('../src')
+        '@': resolve('src')
       }
     },
     module: {
-      rules: [
-        {
-          test: /bootstrap\.tsx$/,
-          use: [
-            {
-              loader: 'bundle-loader',
-              options: {
-                lazy: true,
-              },
-            },
-            'ts-loader'
-          ]
-        },
-        {
-          test: /\.tsx?$/,
-          loader: 'ts-loader',
-          exclude: /node_modules/
-        },
-        {
-          test: /\.scss$/,
-          use: [
-            MiniCssExtractPlugin.loader,
-            {
-              loader: 'css-loader',
-              options: {
-                sourceMap: false,
-                importLoaders: 2,
-              },
-            },
-            'postcss-loader',
-            {
-              loader: 'sass-loader',
-              options: {
-                sassOptions: {
-                  outputStyle: 'expanded',
-                },
-              },
-            }
-          ]
-        },
-        {
-          test: /\.css$/,
-          use: [
-            'style-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                importLoaders: 1,
-              },
-            },
-            {
-              loader: 'postcss-loader'
-            }
-          ]
-        },
-        {
-          test: /\.(png|jpg|gif)$/,
-          loader: 'url-loader',
-          options: {
-            limit: 8192,
-          }
-        },
-      ],
+      rules: getLoaderConfig(),
     },
     plugins: [
-      new CleanWebpackPlugin(),
+      ...getHtmlWebpackPlugin(isDev),
       new webpack.DefinePlugin({
         'process.env': {
           'TARGET': JSON.stringify(process.env.TARGET),
@@ -137,38 +122,20 @@ module.exports = (env, argv) => {
           'SENTRY_PROJECT_NAME': JSON.stringify(process.env.SENTRY_PROJECT_NAME || ''),
         }
       }),
-      ...getHtmlWebpackPlugin(isDev),
-      ...moduleFederations,
       new MiniCssExtractPlugin({
         filename: isDev ? '[name].css' : '[name]_[chunkhash:8].css',
-      }),
-      new DeleteSourcemapWebpackPlugin({
-        dryRun: isDev,
-        path: resolve('dist/static'),
       }),
       new CopyPlugin({
         patterns: [
           { from: 'public/asset', to: '..' },
         ],
       }),
-      new UploadAlisOSSPlugin({
+      new CleanWebpackPlugin(),
+      new DeleteSourcemapWebpackPlugin({
         dryRun: isDev,
-        region: process.env.OSS_REGION,
-        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-        bucket: process.env.OSS_BUCKET,
-        prefix: process.env.OSS_PREFIX,
+        path: resolve('dist/static'),
       }),
-      new SentryWebpackPlugin({
-        dryRun: isDev,
-        release: `${process.env.SENTRY_PROJECT_NAME}@${package.version}`,
-        include: path.join(__dirname, 'dist'),
-        ignoreFile: '.sentrycliignore',
-        ignore: ['node_modules'],
-        configFile: '.sentry.properties',
-        urlPrefix: `~/${process.env.SENTRY_PROJECT_NAME}/`
-      }),
-    ],
+    ].concat(extraPlugins),
     optimization: {
       minimize: !isDev,
     },
