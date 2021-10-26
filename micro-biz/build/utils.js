@@ -20,7 +20,7 @@ const getEntryMap = (pageDir) => {
   getEntry(pageDir).forEach(item => {
     try {
       // 判断页面文件是否存在
-      fs.accessSync(resolve(`${pageDir}/${item}/index.tsx`), fs.constants.F_OK);
+      fs.accessSync(`${pageDir}/${item}/index.tsx`, fs.constants.F_OK);
       entry[item] = `${pageDir}/${item}/index`;
     } catch (e) {
       console.error(`Page not exists: ${item}`);
