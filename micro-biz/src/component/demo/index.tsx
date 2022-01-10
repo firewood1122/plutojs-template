@@ -1,9 +1,7 @@
 import React from 'react';
 import './index.scss';
 
-interface PropsType {
-}
-const demo = (props: PropsType) => {
+const demo = () => {
   return (
     <div className="demo">
       <div className="icon"></div>
