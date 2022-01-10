@@ -29,6 +29,7 @@
     "postcss": "7.0.35",
     "postcss-loader": "^4.1.0",
     "postcss-px2rem": "^0.3.0",
+    "prettier": "^2.5.1",
     "sass": "^1.29.0",
     "sass-loader": "^10.1.0",
     "serve": "11.3.2",
@@ -45,7 +46,8 @@
     "build:test": "cross-env TARGET=test webpack --mode production --config build/webpack.config.js",
     "build:pre": "cross-env TARGET=staging webpack --mode production --config build/webpack.config.js",
     "build": "cross-env TARGET=production webpack --mode production --config build/webpack.config.js",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@sentry/react": "5.30.0",

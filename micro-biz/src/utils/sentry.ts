@@ -1,6 +1,7 @@
-import * as Sentry from '@sentry/react';
+import * as Sentry from "@sentry/react";
 
-const { SENTRY_DSN, SENTRY_PROJECT_NAME, REACT_APP_VERSION, TARGET } = process.env;
+const { SENTRY_DSN, SENTRY_PROJECT_NAME, REACT_APP_VERSION, TARGET } =
+  process.env;
 export const setUpSentry = () => {
   if (SENTRY_DSN) {
     Sentry.init({

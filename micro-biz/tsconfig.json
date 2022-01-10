@@ -2,9 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "alwaysStrict": true,
     "declaration": false,
@@ -15,9 +13,7 @@
     "jsx": "react",
     "target": "ES5",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Node"
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

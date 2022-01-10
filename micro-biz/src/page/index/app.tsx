@@ -1,6 +1,6 @@
-import React from 'react';
-import Demo from '@/component/demo';
-import './app.scss';
+import React from "react";
+import Demo from "@/component/demo";
+import "./app.scss";
 
 const App = () => {
   return (
